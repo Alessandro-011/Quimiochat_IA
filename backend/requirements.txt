@@ -1,0 +1,35 @@
+# ============================================================
+# Sistema de Quimioinformática Inteligente
+# Dependências Python (backend + frontend)
+# TCC - Engenharia de Software
+# Python 3.11+ (testado com 3.14.6)
+# ============================================================
+
+# --- Framework Web ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# --- Banco de Dados ---
+sqlalchemy>=2.0.30
+
+# --- Validação de Dados ---
+pydantic[email]>=2.8.0
+email-validator>=2.2.0
+
+# --- Autenticação e Segurança ---
+# Nota: usa bcrypt diretamente (sem passlib) para compatibilidade com Python 3.14+
+PyJWT>=2.9.0
+bcrypt>=4.0.0
+
+# --- HTTP Client Assíncrono (PubChem + Ollama) ---
+httpx>=0.27.0
+
+# --- Variáveis de Ambiente ---
+python-dotenv>=1.0.0
+
+# --- Utilitários ---
+python-multipart>=0.0.9
+
+# --- Frontend ---
+streamlit>=1.35.0
+requests>=2.31.0
