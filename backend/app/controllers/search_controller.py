@@ -3,7 +3,7 @@ controllers/search_controller.py
 =================================
 Lógica de negócio para pesquisa de moléculas e histórico.
 
-TCC - Sistema de Quimioinformática Inteligente
+TCC - Análise e Desenvolvimento de Sistemas
 """
 
 import json
@@ -25,18 +25,6 @@ async def search_molecule(
     current_user: User,
     db: Session,
 ) -> SearchResponse:
-    """
-    Ponto de entrada para pesquisa de molécula.
-    Delega ao molecule_service que orquestra IA + PubChem em paralelo.
-
-    Args:
-        request     : SearchRequest com o nome da molécula.
-        current_user: Usuário autenticado (JWT).
-        db          : Sessão do banco.
-
-    Returns:
-        SearchResponse com comparativo AI vs PubChem.
-    """
     logger.info(
         "Pesquisa iniciada por user_id=%d: '%s'",
         current_user.id,
@@ -56,18 +44,6 @@ def get_search_history(
     skip: int = 0,
     limit: int = 20,
 ) -> List[SearchHistoryItem]:
-    """
-    Retorna o histórico de pesquisas do usuário autenticado.
-
-    Args:
-        current_user: Usuário autenticado.
-        db          : Sessão do banco.
-        skip        : Offset para paginação.
-        limit       : Máximo de registros.
-
-    Returns:
-        Lista de SearchHistoryItem com dados enriquecidos.
-    """
     searches = (
         db.query(Search)
         .options(
@@ -84,7 +60,6 @@ def get_search_history(
 
     history = []
     for s in searches:
-        # Parseia o JSON de resultado da IA
         ai_nome  = None
         ai_smiles = None
         if s.ai_result and s.ai_result.resultado:
@@ -95,17 +70,26 @@ def get_search_history(
             except (json.JSONDecodeError, AttributeError):
                 pass
 
+        pc = s.pubchem_result
+
         item = SearchHistoryItem(
             id               = s.id,
             search_time      = s.search_time,
             response_time_ms = s.response_time_ms,
             molecule         = s.molecule.nome_original if s.molecule else None,
+            
             ai_name          = ai_nome,
             ai_smiles        = ai_smiles,
-            ai_time_ms       = s.ai_result.tempo_resposta    if s.ai_result    else None,
-            pubchem_name     = s.pubchem_result.nome         if s.pubchem_result else None,
-            pubchem_smiles   = s.pubchem_result.smiles       if s.pubchem_result else None,
-            pubchem_time_ms  = s.pubchem_result.tempo_resposta if s.pubchem_result else None,
+            ai_time_ms       = s.ai_result.tempo_resposta if s.ai_result else None,
+            
+            pubchem_cid             = pc.cid if pc else None,
+            pubchem_nome_comum      = pc.nome_comum if pc else None,
+            pubchem_nome_iupac      = pc.nome_iupac if pc else None,
+            pubchem_smiles_canonico = pc.smiles_canonico if pc else None,
+            pubchem_smiles_isomerico= pc.smiles_isomerico if pc else None,
+            pubchem_formula         = pc.formula if pc else None,
+            pubchem_massa           = pc.massa if pc else None,
+            pubchem_time_ms         = pc.tempo_resposta if pc else None,
         )
         history.append(item)
 

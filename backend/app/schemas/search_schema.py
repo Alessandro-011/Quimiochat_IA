@@ -3,7 +3,7 @@ schemas/search_schema.py
 ========================
 Schemas Pydantic para pesquisas, resultados de IA e PubChem.
 
-TCC - Sistema de Quimioinformática Inteligente
+TCC - Análise e Desenvolvimento de Sistemas
 """
 
 from datetime import datetime
@@ -20,7 +20,7 @@ class SearchRequest(BaseModel):
         min_length=1,
         max_length=255,
         examples=["Aspirina"],
-        description="Nome popular da molécula a ser pesquisada (em português).",
+        description="Nome popular da molécula a ser pesquisada.",
     )
 
 
@@ -28,9 +28,9 @@ class SearchRequest(BaseModel):
 # Resultado da IA (Ollama/Gemma2)
 # ------------------------------------------------------------------
 class AIResultSchema(BaseModel):
-    name:    Optional[str] = None   # Nome químico retornado pela IA
-    smiles:  Optional[str] = None   # SMILES gerado pela IA
-    time_ms: Optional[int] = None   # Tempo de resposta em ms
+    name:    Optional[str] = None
+    smiles:  Optional[str] = None
+    time_ms: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
@@ -39,22 +39,26 @@ class AIResultSchema(BaseModel):
 # Resultado da API PubChem
 # ------------------------------------------------------------------
 class PubChemResultSchema(BaseModel):
-    cid:     Optional[int] = None   # PubChem Compound ID
-    name:    Optional[str] = None   # Nome retornado pelo PubChem
-    smiles:  Optional[str] = None   # SMILES canônico
-    time_ms: Optional[int] = None   # Tempo de resposta em ms
+    cid:              Optional[int] = None
+    nome_comum:       Optional[str] = None
+    nome_iupac:       Optional[str] = None
+    smiles_canonico:  Optional[str] = None
+    smiles_isomerico: Optional[str] = None
+    formula:          Optional[str] = None
+    massa:            Optional[str] = None
+    time_ms:          Optional[int] = None
 
     model_config = {"from_attributes": True}
 
 
 # ------------------------------------------------------------------
-# Resposta completa de uma pesquisa — formato JSON especificado no TCC
+# Resposta completa de uma pesquisa
 # ------------------------------------------------------------------
 class SearchResponse(BaseModel):
-    molecule: str                        # Nome pesquisado
-    ai:       AIResultSchema             # Dados da IA
-    pubchem:  PubChemResultSchema        # Dados do PubChem
-    search_id: Optional[int] = None     # ID do registro no banco
+    molecule: str
+    ai:       AIResultSchema
+    pubchem:  PubChemResultSchema
+    search_id: Optional[int] = None
 
 
 # ------------------------------------------------------------------
@@ -64,12 +68,19 @@ class SearchHistoryItem(BaseModel):
     id:               int
     search_time:      Optional[datetime] = None
     response_time_ms: Optional[int]      = None
-    molecule:         Optional[str]      = None   # nome_original
+    molecule:         Optional[str]      = None
+    
     ai_name:          Optional[str]      = None
     ai_smiles:        Optional[str]      = None
     ai_time_ms:       Optional[int]      = None
-    pubchem_name:     Optional[str]      = None
-    pubchem_smiles:   Optional[str]      = None
-    pubchem_time_ms:  Optional[int]      = None
+    
+    pubchem_cid:             Optional[int] = None
+    pubchem_nome_comum:      Optional[str] = None
+    pubchem_nome_iupac:      Optional[str] = None
+    pubchem_smiles_canonico: Optional[str] = None
+    pubchem_smiles_isomerico:Optional[str] = None
+    pubchem_formula:         Optional[str] = None
+    pubchem_massa:           Optional[str] = None
+    pubchem_time_ms:         Optional[int] = None
 
     model_config = {"from_attributes": True}

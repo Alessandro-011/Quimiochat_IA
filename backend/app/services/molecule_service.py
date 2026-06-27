@@ -1,12 +1,15 @@
 """
 services/molecule_service.py
-Orquestrador de pesquisa molecular: dispara Ollama e PubChem em paralelo,
-persiste os resultados e retorna o JSON comparativo.
+============================
+Orquestrador de pesquisa molecular.
+Executa a IA (Gemma2) primeiro para gerar inteligência, e então repassa os
+dados da IA como fallbacks para a busca rigorosa no PubChem.
+
+TCC - Análise e Desenvolvimento de Sistemas
 """
 
 import json
 import logging
-import asyncio
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -28,24 +31,32 @@ async def perform_molecule_search(
     db: Session,
 ) -> SearchResponse:
     """
-    Dispara consultas simultâneas (asyncio.gather) ao Ollama e ao PubChem,
-    salva tudo no banco em um único commit e retorna o comparativo.
+    Busca de molécula com arquitetura de fallback:
+    1. Executa IA.
+    2. Executa PubChem passando os dados da IA como fallback.
     """
-    logger.info("Pesquisa: '%s' para user_id=%d", molecule_name, user_id)
+    logger.info("Pesquisa iniciada: '%s' para user_id=%d", molecule_name, user_id)
 
-    (ai_nome, ai_smiles, ai_time_ms), \
-    (pc_cid, pc_nome, pc_smiles, pc_time_ms) = await asyncio.gather(
-        query_ollama(molecule_name),
-        query_pubchem(molecule_name),
-    )
+    # 1. Executa a IA primeiro (para obter traduções/IUPAC/SMILES de fallback)
+    ai_nome, ai_smiles, ai_time_ms = await query_ollama(molecule_name)
 
-    total_time_ms = max(ai_time_ms or 0, pc_time_ms or 0)
+    # 2. Executa o PubChem usando os dados da IA como fallback de busca
+    (
+        pc_cid, pc_nome_comum, pc_nome_iupac,
+        pc_smiles_canonico, pc_smiles_isomerico,
+        pc_formula, pc_massa, pc_time_ms
+    ) = await query_pubchem(molecule_name, ai_name=ai_nome, ai_smiles=ai_smiles)
 
-    nome_quimico_final = pc_nome or ai_nome
-    smiles_final       = pc_smiles or ai_smiles
+    total_time_ms = (ai_time_ms or 0) + (pc_time_ms or 0)
 
+    # Resolve o nome e o SMILES para a tabela geral `molecules`
+    nome_quimico_final = pc_nome_comum or pc_nome_iupac or ai_nome
+    smiles_final       = pc_smiles_canonico or pc_smiles_isomerico or ai_smiles
+
+    # Persiste na tabela Molecules
     molecule = _get_or_create_molecule(db, molecule_name, nome_quimico_final, smiles_final)
 
+    # Persiste o histórico
     search = Search(
         user_id          = user_id,
         molecule_id      = molecule.id,
@@ -54,6 +65,7 @@ async def perform_molecule_search(
     db.add(search)
     db.flush()
 
+    # Persiste resultado IA
     db.add(AIResult(
         search_id      = search.id,
         modelo         = "gemma2",
@@ -61,25 +73,39 @@ async def perform_molecule_search(
         tempo_resposta = ai_time_ms,
     ))
 
+    # Persiste resultado PubChem (agora com campos precisos e separados)
     db.add(PubChemResult(
-        search_id      = search.id,
-        cid            = pc_cid,
-        nome           = pc_nome,
-        smiles         = pc_smiles,
-        tempo_resposta = pc_time_ms,
+        search_id        = search.id,
+        cid              = pc_cid,
+        nome_comum       = pc_nome_comum,
+        nome_iupac       = pc_nome_iupac,
+        smiles_canonico  = pc_smiles_canonico,
+        smiles_isomerico = pc_smiles_isomerico,
+        formula          = pc_formula,
+        massa            = pc_massa,
+        tempo_resposta   = pc_time_ms,
     ))
 
     db.commit()
     db.refresh(search)
 
-    logger.info("Pesquisa salva: id=%d | AI=%dms | PubChem=%dms",
+    logger.info("Pesquisa salva no BD: id=%d | AI=%dms | PubChem=%dms",
                 search.id, ai_time_ms or 0, pc_time_ms or 0)
 
     return SearchResponse(
         molecule  = molecule_name,
         search_id = search.id,
         ai        = AIResultSchema(name=ai_nome, smiles=ai_smiles, time_ms=ai_time_ms),
-        pubchem   = PubChemResultSchema(cid=pc_cid, name=pc_nome, smiles=pc_smiles, time_ms=pc_time_ms),
+        pubchem   = PubChemResultSchema(
+            cid              = pc_cid,
+            nome_comum       = pc_nome_comum,
+            nome_iupac       = pc_nome_iupac,
+            smiles_canonico  = pc_smiles_canonico,
+            smiles_isomerico = pc_smiles_isomerico,
+            formula          = pc_formula,
+            massa            = pc_massa,
+            time_ms          = pc_time_ms,
+        ),
     )
 
 
@@ -89,7 +115,6 @@ def _get_or_create_molecule(
     nome_quimico: Optional[str],
     smiles: Optional[str],
 ) -> Molecule:
-    """Busca molécula existente pelo nome original ou cria uma nova entrada."""
     molecule = (
         db.query(Molecule)
         .filter(Molecule.nome_original.ilike(nome_original.strip()))

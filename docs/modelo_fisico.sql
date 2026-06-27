@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS molecules (
     id            INTEGER      NOT NULL,
     nome_original VARCHAR(255) NOT NULL,
     nome_quimico  VARCHAR(500)     NULL,
-    smiles        TEXT             NULL,
+                 NULL,
     created_at    DATETIME     NOT NULL DEFAULT (datetime('now', 'localtime')),
 
     CONSTRAINT pk_molecules PRIMARY KEY (id AUTOINCREMENT)
