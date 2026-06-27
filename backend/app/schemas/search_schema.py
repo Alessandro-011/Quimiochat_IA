@@ -39,10 +39,14 @@ class AIResultSchema(BaseModel):
 # Resultado da API PubChem
 # ------------------------------------------------------------------
 class PubChemResultSchema(BaseModel):
-    cid:     Optional[int] = None   # PubChem Compound ID
-    name:    Optional[str] = None   # Nome retornado pelo PubChem
-    smiles:  Optional[str] = None   # SMILES canônico
-    time_ms: Optional[int] = None   # Tempo de resposta em ms
+    cid:              Optional[int] = None
+    nome_comum:       Optional[str] = None
+    nome_iupac:       Optional[str] = None
+    smiles_canonico:  Optional[str] = None
+    smiles_isomerico: Optional[str] = None
+    formula:          Optional[str] = None
+    massa:            Optional[str] = None
+    time_ms:          Optional[int] = None   # Mapeado de tempo_resposta
 
     model_config = {"from_attributes": True}
 
@@ -68,8 +72,13 @@ class SearchHistoryItem(BaseModel):
     ai_name:          Optional[str]      = None
     ai_smiles:        Optional[str]      = None
     ai_time_ms:       Optional[int]      = None
-    pubchem_name:     Optional[str]      = None
-    pubchem_smiles:   Optional[str]      = None
-    pubchem_time_ms:  Optional[int]      = None
+    pubchem_cid:               Optional[int] = None
+    pubchem_nome_comum:        Optional[str] = None
+    pubchem_nome_iupac:        Optional[str] = None
+    pubchem_smiles_canonico:   Optional[str] = None
+    pubchem_smiles_isomerico:  Optional[str] = None
+    pubchem_formula:           Optional[str] = None
+    pubchem_massa:             Optional[str] = None
+    pubchem_time_ms:           Optional[int] = None
 
     model_config = {"from_attributes": True}

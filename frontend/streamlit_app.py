@@ -45,7 +45,7 @@ h1, h2, h3, h4 { font-family: 'Inter', sans-serif !important; color: #f0f6ff !im
 p, span, label  { color: #94a3b8; }
 
 /* ── Oculta decoração padrão Streamlit ── */
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer { visibility: hidden; }
 [data-testid="stDecoration"] { display: none; }
 .block-container { padding-top: 1.5rem !important; }
 
@@ -207,13 +207,16 @@ _HTTP_ERRORS = {
     503: "Serviço temporariamente indisponível.",
 }
 
-def _friendly_error(status_code: int, detail: str = "") -> str:
+def _friendly_error(status_code: int, detail: str | list = "") -> str:
     """Converte status HTTP em mensagem legível para o usuário."""
     if status_code in _HTTP_ERRORS:
         return _HTTP_ERRORS[status_code]
-    # Usa o detalhe da API se for uma frase legível (sem jargão técnico)
-    if detail and not any(x in detail.lower() for x in ["traceback", "exception", "stack", "http"]):
-        return detail
+    
+    if isinstance(detail, list):
+        return "Preencha as informações corretamente."
+
+    if detail and not any(x in str(detail).lower() for x in ["traceback", "exception", "stack", "http"]):
+        return str(detail)
     return "Algo deu errado. Tente novamente."
 
 
@@ -492,15 +495,21 @@ def show_search_page():
     # ── Exemplos rápidos ──
     st.markdown("<div style='color:#94a3b8; font-size:0.8rem; margin-bottom:6px;'>EXEMPLOS RÁPIDOS</div>",
                 unsafe_allow_html=True)
-    exemplos = ["Aspirina", "Cafeína", "Glicose", "Paracetamol", "Dopamina", "Ibuprofeno"]
-    ex_cols  = st.columns(len(exemplos))
-    for i, ex in enumerate(exemplos):
-        with ex_cols[i]:
-            st.markdown("<div class='ex-btn'>", unsafe_allow_html=True)
-            if st.button(ex, key=f"ex_{i}"):
-                st.session_state.mol_input  = ex
-                st.session_state.auto_search = True
-            st.markdown("</div>", unsafe_allow_html=True)
+    exemplos = ["Aspirina", "Cafeína", "Glicose", "Dopamina", "Ibuprofeno", "Paracetamol", "Etanol", "Metanol", "Acetona", "Ácido Acético"]
+    
+    # Renderizar em 2 linhas de 5 colunas
+    for row in range(0, 10, 5):
+        ex_cols = st.columns(5)
+        for i in range(5):
+            idx = row + i
+            if idx < len(exemplos):
+                ex = exemplos[idx]
+                with ex_cols[i]:
+                    st.markdown("<div class='ex-btn'>", unsafe_allow_html=True)
+                    if st.button(ex, key=f"ex_{idx}", use_container_width=True):
+                        st.session_state.mol_input  = ex
+                        st.session_state.auto_search = True
+                    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
 
@@ -541,10 +550,13 @@ def show_search_result(result: dict):
     ai_smiles = ai.get("smiles") or ""
     ai_time   = ai.get("time_ms")
 
-    pc_name   = pc.get("name")   or ""
-    pc_smiles = pc.get("smiles") or ""
-    pc_time   = pc.get("time_ms")
-    pc_cid    = pc.get("cid")
+    pc_cid     = pc.get("cid")
+    pc_comum   = pc.get("nome_comum") or ""
+    pc_iupac   = pc.get("nome_iupac") or ""
+    pc_smiles  = pc.get("smiles_canonico") or ""
+    pc_formula = pc.get("formula") or ""
+    pc_massa   = pc.get("massa") or ""
+    pc_time    = pc.get("time_ms")
 
     st.markdown("---")
     st.markdown(f"""
@@ -553,42 +565,13 @@ def show_search_result(result: dict):
     </h2>
     """, unsafe_allow_html=True)
 
-    # ── Duas colunas: IA | PubChem ──
-    col_ai, col_pc = st.columns(2, gap="medium")
-
-    with col_ai:
-        st.markdown("""
-        <div class='qc-card qc-card-ai'>
-            <span class='qc-badge qc-badge-ai'>🤖 Gemma2 — IA Local</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-        with st.container():
-            _field("Nome Químico", ai_name or "Não identificado")
-            st.markdown("<div style='height:0.6rem'></div>", unsafe_allow_html=True)
-            _field("SMILES", ai_smiles or "Não gerado", mono=True)
-            st.markdown(
-                f"<div style='margin-top:0.6rem;'>{_time_pill(ai_time)}</div>",
-                unsafe_allow_html=True,
-            )
-
-        if ai_smiles:
-            img_url = get_molecule_image_url(ai_smiles)
-            if img_url:
-                st.markdown("<div style='margin-top:0.8rem; color:#64748b; font-size:0.78rem;'>ESTRUTURA 2D</div>",
-                            unsafe_allow_html=True)
-                try:
-                    st.image(img_url, width=240)
-                except Exception:
-                    st.caption("Imagem da estrutura não disponível.")
-
-        if not ai_name and not ai_smiles:
-            st.info("A IA não retornou dados. Verifique se o Ollama está em execução.")
+    # ── Duas colunas: PubChem | IA ──
+    col_pc, col_ai = st.columns(2, gap="medium")
 
     with col_pc:
         st.markdown("""
         <div class='qc-card qc-card-pc'>
-            <span class='qc-badge qc-badge-pc'>🔬 PubChem — Base Científica</span>
+            <span class='qc-badge qc-badge-pc'>🔬 PubChem (Oficial)</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -603,9 +586,19 @@ def show_search_result(result: dict):
                     unsafe_allow_html=True,
                 )
                 st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
-            _field("Nome Químico", pc_name or "Não encontrado na base")
+            _field("Nome Pesquisado", mol)
             st.markdown("<div style='height:0.6rem'></div>", unsafe_allow_html=True)
-            _field("SMILES", pc_smiles or "Não disponível", mono=True)
+            _field("Nome Oficial (PubChem)", pc_comum or "Não encontrado")
+            st.markdown("<div style='height:0.6rem'></div>", unsafe_allow_html=True)
+            _field("Nome IUPAC", pc_iupac or "—")
+            st.markdown("<div style='height:0.6rem'></div>", unsafe_allow_html=True)
+            _field("SMILES Oficial", pc_smiles or "Não disponível", mono=True)
+            st.markdown("<div style='height:0.6rem'></div>", unsafe_allow_html=True)
+            
+            c_f, c_m = st.columns(2)
+            with c_f: _field("Fórmula Molecular", pc_formula or "—")
+            with c_m: _field("Massa Molecular", f"{pc_massa} g/mol" if pc_massa else "—")
+            
             st.markdown(
                 f"<div style='margin-top:0.6rem;'>{_time_pill(pc_time)}</div>",
                 unsafe_allow_html=True,
@@ -613,15 +606,44 @@ def show_search_result(result: dict):
 
         if pc_cid:
             img_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{pc_cid}/PNG"
-            st.markdown("<div style='margin-top:0.8rem; color:#64748b; font-size:0.78rem;'>ESTRUTURA 2D</div>",
+            st.markdown("<div style='margin-top:0.8rem; color:#64748b; font-size:0.78rem;'>ESTRUTURA 2D OFICIAL</div>",
                         unsafe_allow_html=True)
             try:
                 st.image(img_url, width=240)
             except Exception:
                 st.caption("Imagem da estrutura não disponível.")
 
-        if not pc_name and not pc_smiles:
-            st.info("Molécula não encontrada no PubChem. Tente o nome em inglês ou o nome IUPAC.")
+        if not pc_cid and not pc_smiles:
+            st.info("Molécula não encontrada no PubChem.")
+
+    with col_ai:
+        st.markdown("""
+        <div class='qc-card qc-card-ai'>
+            <span class='qc-badge qc-badge-ai'>🤖 Gemma2 (IA Local)</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        with st.container():
+            _field("Tradução / Nome", ai_name or "Não identificado")
+            st.markdown("<div style='height:0.6rem'></div>", unsafe_allow_html=True)
+            _field("SMILES Gerado", ai_smiles or "Não gerado", mono=True)
+            st.markdown(
+                f"<div style='margin-top:0.6rem;'>{_time_pill(ai_time)}</div>",
+                unsafe_allow_html=True,
+            )
+
+        if ai_smiles:
+            img_url = get_molecule_image_url(ai_smiles)
+            if img_url:
+                st.markdown("<div style='margin-top:0.8rem; color:#64748b; font-size:0.78rem;'>ESTRUTURA 2D GERADA</div>",
+                            unsafe_allow_html=True)
+                try:
+                    st.image(img_url, width=240)
+                except Exception:
+                    st.caption("Imagem da estrutura não disponível.")
+
+        if not ai_name and not ai_smiles:
+            st.info("A IA não retornou dados. Verifique se o Ollama está em execução.")
 
     # ── Painel de desempenho ──
     st.markdown("---")
@@ -640,7 +662,7 @@ def show_search_result(result: dict):
     with c3:
         st.metric("IA · Nome",        "✅ Obtido" if ai_name else "❌ Ausente")
     with c4:
-        st.metric("PubChem · Nome",   "✅ Obtido" if pc_name else "❌ Ausente")
+        st.metric("PubChem · Nome",   "✅ Obtido" if (pc_comum or pc_iupac) else "❌ Ausente")
 
     # Comparação de SMILES
     if ai_smiles and pc_smiles:

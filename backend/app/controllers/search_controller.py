@@ -103,9 +103,14 @@ def get_search_history(
             ai_name          = ai_nome,
             ai_smiles        = ai_smiles,
             ai_time_ms       = s.ai_result.tempo_resposta    if s.ai_result    else None,
-            pubchem_name     = s.pubchem_result.nome         if s.pubchem_result else None,
-            pubchem_smiles   = s.pubchem_result.smiles       if s.pubchem_result else None,
-            pubchem_time_ms  = s.pubchem_result.tempo_resposta if s.pubchem_result else None,
+            pubchem_cid              = s.pubchem_result.cid             if s.pubchem_result else None,
+            pubchem_nome_comum       = s.pubchem_result.nome_comum      if s.pubchem_result else None,
+            pubchem_nome_iupac       = s.pubchem_result.nome_iupac      if s.pubchem_result else None,
+            pubchem_smiles_canonico  = s.pubchem_result.smiles_canonico if s.pubchem_result else None,
+            pubchem_smiles_isomerico = s.pubchem_result.smiles_isomerico if s.pubchem_result else None,
+            pubchem_formula          = s.pubchem_result.formula         if s.pubchem_result else None,
+            pubchem_massa            = s.pubchem_result.massa           if s.pubchem_result else None,
+            pubchem_time_ms          = s.pubchem_result.tempo_resposta  if s.pubchem_result else None,
         )
         history.append(item)
 

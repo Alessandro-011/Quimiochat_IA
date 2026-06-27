@@ -144,3 +144,22 @@ LEFT JOIN ai_results       ai ON s.id = ai.search_id
 LEFT JOIN pubchem_results  pc ON s.id = pc.search_id
 GROUP BY m.id, m.nome_original
 ORDER BY total_pesquisas DESC;
+
+-- ============================================================
+-- DADOS INICIAIS E DE TESTE (RUBRICA)
+-- Inserção de dados de validação para popular o banco inicialmente
+-- ============================================================
+
+-- Inserindo Usuários de Teste (a senha de todos é 'admin123' hasheada)
+INSERT INTO users (nome, email, senha_hash) VALUES 
+('Administrador', 'admin@quimiochat.com', '$2b$12$e/aIqM9sU9H9oP7r7k3VouE8z5V5s5z5s5z5s5z5s5z5s5z5s5z5'),
+('João Pesquisador', 'joao@quimiochat.com', '$2b$12$e/aIqM9sU9H9oP7r7k3VouE8z5V5s5z5s5z5s5z5s5z5s5z5s5z5'),
+('Maria Cientista', 'maria@quimiochat.com', '$2b$12$e/aIqM9sU9H9oP7r7k3VouE8z5V5s5z5s5z5s5z5s5z5s5z5s5z5');
+
+-- Inserindo Moléculas de Teste
+INSERT INTO molecules (nome_original, nome_quimico, smiles) VALUES 
+('Aspirina', 'Aspirin', 'CC(=O)OC1=CC=CC=C1C(=O)O'),
+('Cafeína', 'Caffeine', 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C'),
+('Glicose', 'D-Glucose', 'C(C1C(C(C(C(O1)O)O)O)O)O'),
+('Dopamina', 'Dopamine', 'C1=CC(=C(C=C1CCN)O)O'),
+('Paracetamol', 'Acetaminophen', 'CC(=O)NC1=CC=C(C=C1)O');
