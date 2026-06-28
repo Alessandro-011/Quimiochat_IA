@@ -46,7 +46,7 @@ class PubChemResultSchema(BaseModel):
     smiles_isomerico: Optional[str] = None
     formula:          Optional[str] = None
     massa:            Optional[str] = None
-    time_ms:          Optional[int] = None
+    time_ms:          Optional[int] = None   # Mapeado de tempo_resposta
 
     model_config = {"from_attributes": True}
 
@@ -73,14 +73,13 @@ class SearchHistoryItem(BaseModel):
     ai_name:          Optional[str]      = None
     ai_smiles:        Optional[str]      = None
     ai_time_ms:       Optional[int]      = None
-    
-    pubchem_cid:             Optional[int] = None
-    pubchem_nome_comum:      Optional[str] = None
-    pubchem_nome_iupac:      Optional[str] = None
-    pubchem_smiles_canonico: Optional[str] = None
-    pubchem_smiles_isomerico:Optional[str] = None
-    pubchem_formula:         Optional[str] = None
-    pubchem_massa:           Optional[str] = None
-    pubchem_time_ms:         Optional[int] = None
+    pubchem_cid:               Optional[int] = None
+    pubchem_nome_comum:        Optional[str] = None
+    pubchem_nome_iupac:        Optional[str] = None
+    pubchem_smiles_canonico:   Optional[str] = None
+    pubchem_smiles_isomerico:  Optional[str] = None
+    pubchem_formula:           Optional[str] = None
+    pubchem_massa:             Optional[str] = None
+    pubchem_time_ms:           Optional[int] = None
 
     model_config = {"from_attributes": True}

@@ -21,31 +21,22 @@ PUBCHEM_BASE_URL = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
 PUBCHEM_TIMEOUT  = 20
 
 
-async def query_pubchem(
-    molecule_name: str,
-    ai_name: Optional[str] = None,
-    ai_smiles: Optional[str] = None
-) -> Tuple[Optional[int], Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], int]:
+async def query_pubchem(molecule_name: str, fallback_name: str = None, fallback_smiles: str = None) -> Tuple[Optional[int], Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], int]:
     """
-    Consulta o PubChem de forma robusta.
+    Consulta o PubChem pelo nome da molécula em múltiplas etapas:
+      1. Resolve nome -> CID (com suporte a fallback em inglês/SMILES via IA).
+      2. Busca propriedades rigorosas pelo CID.
 
-    Fluxo de fallback para encontrar o CID:
-      1. Pesquisa exata do nome original.
-      2. Pesquisa sem acentos (fallback embutido).
-      3. Pesquisa pelo nome retornado pela IA (IUPAC ou traduzido).
-      4. Busca pelo SMILES retornado pela IA.
-
-    Após encontrar o CID, extrai propriedades completas e garante que
-    campos SMILES sejam testados corretamente.
-
-    Returns:
-        Tupla contendo: (cid, nome_comum, nome_iupac, smiles_canonico, smiles_isomerico, formula, massa, tempo_ms)
+    Retorna (cid, nome_comum, nome_iupac, smiles_canonico, smiles_isomerico, formula, massa, tempo_ms).
     """
     start_time = time.monotonic()
     cid = None
 
-    # Monta a lista de tentativas para buscar o CID
-    name_candidates = [molecule_name]
+    candidates = [molecule_name]
+    if fallback_name and fallback_name.strip() and fallback_name.strip().lower() != molecule_name.lower():
+        candidates.append(fallback_name.strip())
+    
+    # Adiciona versão sem acentos
     try:
         import unicodedata
         sem_acento = "".join(
@@ -57,73 +48,78 @@ async def query_pubchem(
     except Exception:
         pass
 
-    if ai_name and ai_name.strip() and ai_name not in name_candidates:
-        name_candidates.append(ai_name.strip())
-
-    # Etapa 1: Tentar descobrir o CID via nome (com fallbacks)
-    async with httpx.AsyncClient(timeout=PUBCHEM_TIMEOUT) as client:
-        for candidate in name_candidates:
-            encoded_name = quote(candidate, safe="")
-            cid_url      = f"{PUBCHEM_BASE_URL}/compound/name/{encoded_name}/cids/JSON"
-            try:
-                cid_resp = await client.get(cid_url)
-                if cid_resp.status_code == 200:
-                    cids = cid_resp.json().get("IdentifierList", {}).get("CID", [])
-                    if cids:
-                        cid = cids[0]
-                        logger.info(f"PubChem: CID {cid} encontrado pelo nome '{candidate}'")
-                        break
-            except Exception as exc:
-                logger.warning(f"Erro ao buscar CID pelo nome '{candidate}': {exc}")
-
-        # Etapa 2: Se falhou via nome, tenta via SMILES da IA
-        if not cid and ai_smiles and ai_smiles.strip():
-            encoded_smiles = quote(ai_smiles.strip(), safe="")
-            cid_url = f"{PUBCHEM_BASE_URL}/compound/smiles/{encoded_smiles}/cids/JSON"
-            try:
-                cid_resp = await client.get(cid_url)
-                if cid_resp.status_code == 200:
-                    cids = cid_resp.json().get("IdentifierList", {}).get("CID", [])
-                    if cids:
-                        cid = cids[0]
-                        logger.info(f"PubChem: CID {cid} encontrado via SMILES da IA")
-            except Exception as exc:
-                logger.warning(f"Erro ao buscar CID pelo SMILES da IA: {exc}")
-
-        elapsed_ms = int((time.monotonic() - start_time) * 1000)
-
-        if not cid:
-            logger.warning(f"PubChem: Nenhum CID encontrado para a molécula '{molecule_name}'.")
-            return None, None, None, None, None, None, None, elapsed_ms
-
-        # Etapa 3: Obter Propriedades Oficiais
-        props_url = f"{PUBCHEM_BASE_URL}/compound/cid/{cid}/property/Title,IUPACName,CanonicalSMILES,IsomericSMILES,MolecularFormula,MolecularWeight/JSON"
+    cid = None
+    
+    # 1. Tentar por Nome
+    for candidate in candidates:
+        if not candidate: continue
+        encoded_name = quote(candidate, safe="")
+        cid_url = f"{PUBCHEM_BASE_URL}/compound/name/{encoded_name}/cids/JSON"
         try:
-            props_resp = await client.get(props_url)
-            props_resp.raise_for_status()
-            props = props_resp.json().get("PropertyTable", {}).get("Properties", [{}])[0]
-            
-            nome_comum       = props.get("Title")
-            nome_iupac       = props.get("IUPACName")
-            
-            # PubChem API mapeia IsomericSMILES para "SMILES" e CanonicalSMILES para "ConnectivitySMILES" (em algumas versões JSON)
-            # Mas o mais seguro é pegar diretamente caso venham com o nome correto, ou com os fallbacks.
-            smiles_canonico  = props.get("CanonicalSMILES") or props.get("ConnectivitySMILES")
-            smiles_isomerico = props.get("IsomericSMILES") or props.get("SMILES")
-            
-            formula          = props.get("MolecularFormula")
-            massa            = props.get("MolecularWeight")
-
-            if not smiles_canonico and not smiles_isomerico:
-                logger.error(f"PubChem Anomalia: CID {cid} retornou sem nenhum SMILES!")
-            else:
-                s_utilizado = "Canonical" if smiles_canonico else "Isomeric"
-                logger.info(f"PubChem: Propriedades extraídas com sucesso. SMILES {s_utilizado} utilizado.")
-
-            elapsed_ms = int((time.monotonic() - start_time) * 1000)
-            return cid, nome_comum, nome_iupac, smiles_canonico, smiles_isomerico, formula, massa, elapsed_ms
-
+            async with httpx.AsyncClient(timeout=PUBCHEM_TIMEOUT) as client:
+                cid_resp = await client.get(cid_url)
+                if cid_resp.status_code == 200:
+                    cid_data = cid_resp.json()
+                    cids = cid_data.get("IdentifierList", {}).get("CID", [])
+                    if cids:
+                        cid = cids[0]
+                        logger.info("PubChem: CID %d encontrado pelo nome '%s'", cid, candidate)
+                        break
         except Exception as exc:
-            logger.error(f"Erro ao obter propriedades para o CID {cid}: {exc}")
-            elapsed_ms = int((time.monotonic() - start_time) * 1000)
-            return cid, None, None, None, None, None, None, elapsed_ms
+            logger.error("Erro ao buscar CID pelo nome '%s': %s", candidate, exc)
+
+    # 2. Fallback: Tentar por SMILES estrutural (Reverso)
+    if not cid and fallback_smiles:
+        encoded_smiles = quote(fallback_smiles, safe="")
+        smiles_url = f"{PUBCHEM_BASE_URL}/compound/smiles/{encoded_smiles}/cids/JSON"
+        try:
+            async with httpx.AsyncClient(timeout=PUBCHEM_TIMEOUT) as client:
+                smiles_resp = await client.get(smiles_url)
+                if smiles_resp.status_code == 200:
+                    smiles_data = smiles_resp.json()
+                    cids = smiles_data.get("IdentifierList", {}).get("CID", [])
+                    if cids:
+                        cid = cids[0]
+                        logger.info("PubChem: CID %d encontrado via fallback SMILES", cid)
+        except Exception as exc:
+            logger.error("Erro ao buscar CID pelo SMILES: %s", exc)
+
+    if not cid:
+        logger.warning("PubChem: nenhum CID encontrado para '%s'", molecule_name)
+        return None, None, None, None, None, None, None, int((time.monotonic() - start_time) * 1000)
+
+    # Etapa 3 — Busca de Propriedades Rigorosas pelo CID
+    props_url = f"{PUBCHEM_BASE_URL}/compound/cid/{cid}/property/Title,IUPACName,CanonicalSMILES,IsomericSMILES,MolecularFormula,MolecularWeight/JSON"
+    
+    nome_comum = None
+    nome_iupac = None
+    smiles_c = None
+    smiles_i = None
+    formula = None
+    massa = None
+    
+    try:
+        async with httpx.AsyncClient(timeout=PUBCHEM_TIMEOUT) as client:
+            props_resp = await client.get(props_url)
+            if props_resp.status_code == 200:
+                props_data = props_resp.json()
+                props = props_data.get("PropertyTable", {}).get("Properties", [{}])[0]
+                
+                nome_comum = props.get("Title")
+                nome_iupac = props.get("IUPACName")
+                smiles_c   = props.get("CanonicalSMILES")
+                smiles_i   = props.get("IsomericSMILES")
+                formula    = props.get("MolecularFormula")
+                massa      = props.get("MolecularWeight")
+                
+                # Alguns CIDs não têm CanonicalSMILES no JSON padrão de propriedade, ou usam outras chaves
+                if not smiles_c and props.get("ConnectivitySMILES"):
+                    smiles_c = props.get("ConnectivitySMILES")
+                if not smiles_c and props.get("SMILES"):
+                    smiles_c = props.get("SMILES")
+
+    except Exception as exc:
+        logger.error("Erro ao buscar propriedades PubChem CID %d: %s", cid, exc)
+
+    elapsed_ms = int((time.monotonic() - start_time) * 1000)
+    return cid, nome_comum, nome_iupac, smiles_c, smiles_i, formula, massa, elapsed_ms

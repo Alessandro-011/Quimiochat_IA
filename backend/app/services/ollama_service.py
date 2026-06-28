@@ -26,14 +26,14 @@ MOLECULE_PROMPT_TEMPLATE = """Você é um especialista em química e quimioinfor
 O usuário forneceu o seguinte nome de molécula: "{molecule_name}"
 
 Sua tarefa é:
-1. Identificar a molécula correta (pode ser nome popular, em português ou inglês).
-2. Fornecer a nomenclatura química internacional (IUPAC ou nome comum reconhecido internacionalmente).
+1. Identificar a molécula correta.
+2. Fornecer a nomenclatura química ou nome comum estritamente em INGLÊS (indispensável para integração com bases de dados globais).
 3. Gerar a representação SMILES (Simplified Molecular Input Line Entry System) correta e válida.
 
 Responda SOMENTE com um JSON válido, sem explicações adicionais, no seguinte formato exato:
 {{
-  "nome_quimico": "Nome químico internacional aqui",
-  "smiles": "SMILES aqui",
+  "nome_quimico": "Nome da molécula em INGLÊS aqui",
+  "smiles": "SMILES válido aqui",
   "confianca": "alta/media/baixa"
 }}
 

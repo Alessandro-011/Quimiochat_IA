@@ -20,32 +20,30 @@ class PubChemResult(Base):
     Campos:
         search_id        : FK para a pesquisa associada
         cid              : PubChem Compound ID (identificador único)
-        nome_comum       : Nome popular retornado pelo PubChem (Title)
-        nome_iupac       : Nome químico oficial (IUPACName)
-        smiles_canonico  : Representação SMILES canônica
-        smiles_isomerico : Representação SMILES isomérica
+        nome_comum       : Nome preferencial retornado pelo PubChem
+        nome_iupac       : Nome IUPAC oficial da molécula
+        smiles_canonico  : Canonical SMILES (oficial principal)
+        smiles_isomerico : Isomeric SMILES (usado como fallback visual)
         formula          : Fórmula molecular
         massa            : Massa molecular
-        tempo_resposta   : Tempo de resposta em milissegundos
+        tempo_resposta   : tempo de resposta em milissegundos
     """
 
     __tablename__ = "pubchem_results"
 
     id               = Column(Integer, primary_key=True, index=True, autoincrement=True)
     search_id        = Column(Integer, ForeignKey("searches.id", ondelete="CASCADE"), nullable=False, unique=True)
-    
     cid              = Column(Integer, nullable=True)
     nome_comum       = Column(String(500), nullable=True)
-    nome_iupac       = Column(String(1000), nullable=True)
+    nome_iupac       = Column(String(500), nullable=True)
     smiles_canonico  = Column(Text, nullable=True)
     smiles_isomerico = Column(Text, nullable=True)
     formula          = Column(String(100), nullable=True)
-    massa            = Column(String(50), nullable=True)
-    
+    massa            = Column(String(100), nullable=True)
     tempo_resposta   = Column(Integer, nullable=True)
 
     # Relacionamento: pertence a uma pesquisa
     search = relationship("Search", back_populates="pubchem_result")
 
     def __repr__(self) -> str:
-        return f"<PubChemResult id={self.id} cid={self.cid} nome_comum={self.nome_comum!r}>"
+        return f"<PubChemResult id={self.id} cid={self.cid} comum={self.nome_comum!r}>"

@@ -202,32 +202,40 @@ Pesquisa uma molécula consultando IA (Ollama/Gemma2) e PubChem em paralelo.
   "molecule":  "Aspirina",
   "search_id": 42,
   "ai": {
-    "name":    "Ácido acetilsalicílico",
+    "name":    "Aspirin",
     "smiles":  "CC(=O)Oc1ccccc1C(=O)O",
     "time_ms": 1842
   },
   "pubchem": {
-    "cid":     2244,
-    "name":    "2-(acetyloxy)benzoic acid",
-    "smiles":  "CC(=O)Oc1ccccc1C(=O)O",
-    "time_ms": 312
+    "cid":              2244,
+    "nome_comum":       "Aspirin",
+    "nome_iupac":       "2-(acetyloxy)benzoic acid",
+    "smiles_canonico":  "CC(=O)OC1=CC=CC=C1C(=O)O",
+    "smiles_isomerico": "CC(=O)OC1=CC=CC=C1C(=O)O",
+    "formula":          "C9H8O4",
+    "massa":            "180.16",
+    "time_ms":          312
   }
 }
 ```
 
 **Campos da resposta:**
 
-| Campo              | Tipo    | Descrição                                        |
-|--------------------|---------|--------------------------------------------------|
-| molecule           | string  | Nome pesquisado                                  |
-| search_id          | integer | ID do registro salvo no banco                    |
-| ai.name            | string  | Nome químico retornado pelo Gemma2               |
-| ai.smiles          | string  | SMILES gerado pela IA                            |
-| ai.time_ms         | integer | Tempo de resposta da IA em milissegundos         |
-| pubchem.cid        | integer | PubChem Compound ID                              |
-| pubchem.name       | string  | Nome IUPAC retornado pelo PubChem                |
-| pubchem.smiles     | string  | SMILES canônico do PubChem                       |
-| pubchem.time_ms    | integer | Tempo de resposta do PubChem em milissegundos    |
+| Campo                      | Tipo    | Descrição                                        |
+|----------------------------|---------|--------------------------------------------------|
+| molecule                   | string  | Nome pesquisado                                  |
+| search_id                  | integer | ID do registro salvo no banco                    |
+| ai.name                    | string  | Nome químico traduzido pelo Gemma2               |
+| ai.smiles                  | string  | SMILES gerado pela IA                            |
+| ai.time_ms                 | integer | Tempo de resposta da IA em milissegundos         |
+| pubchem.cid                | integer | PubChem Compound ID                              |
+| pubchem.nome_comum         | string  | Nome oficial/Title no PubChem                    |
+| pubchem.nome_iupac         | string  | Nomenclatura IUPAC oficial                       |
+| pubchem.smiles_canonico    | string  | SMILES canônico oficial da base                  |
+| pubchem.smiles_isomerico   | string  | SMILES isomérico estrutural da base              |
+| pubchem.formula            | string  | Fórmula molecular exata                          |
+| pubchem.massa              | string  | Massa molecular em g/mol                         |
+| pubchem.time_ms            | integer | Tempo de resposta do PubChem em milissegundos    |
 
 ---
 

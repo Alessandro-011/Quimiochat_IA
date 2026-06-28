@@ -1,11 +1,31 @@
 # 🧪 Sistema de Quimioinformática Inteligente
 
-> **Trabalho de Conclusão de Curso (TCC)**
-> **Curso:** Análise e Desenvolvimento de Sistemas
+> **TCC — Trabalho de Conclusão de Curso | Análise e Desenvolvimento de Sistemas**  
+> Integração entre pesquisa química tradicional e Inteligência Artificial Generativa
+
+[![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green?logo=fastapi)](https://fastapi.tiangolo.com)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.x-red?logo=streamlit)](https://streamlit.io)
+[![Ollama](https://img.shields.io/badge/Ollama-Gemma2-orange)](https://ollama.com)
+[![SQLite](https://img.shields.io/badge/SQLite-3-lightblue?logo=sqlite)](https://sqlite.org)
 
 ---
 
-# 📖 Sobre o Projeto
+## 📦 Nota de Entrega (Atividade 2)
+
+**Prezado Professor**
+
+Este projeto foi zipado e está sendo entregue de forma **completa e integrada**, contendo todos os requisitos exigidos para a **Atividade 2**, estruturados nas seguintes pastas para facilitar a sua avaliação:
+
+* **[Item 2.1] Modelagem do Banco de Dados:** Os modelos Conceitual (`DER.png`), Lógico (`modelo_logico.md`) e Físico com scripts de Inserção de Dados de Teste (`modelo_fisico.sql`) estão todos na pasta `docs/`.
+* **[Item 2.2] Documentação da API:** O descritivo completo das rotas, parâmetros e exemplos de JSON encontra-se no arquivo `API_DOCUMENTATION.md` (na pasta `docs/`). O Swagger Interativo também está configurado na rota `/docs`.
+* **[Item 2.3] Backend Implementado:** O código-fonte completo (com controllers, models, schemas e rotas) está na pasta `backend/`. O CRUD e as regras de negócio foram implementadas em FastAPI.
+* **[Item 2.4] Integração com o Frontend:** O sistema já se encontra totalmente integrado ao frontend desenvolvido na Atividade 1. O código da interface está na pasta `frontend/`.
+* **[Item 2.5] Instruções e README:** Este próprio documento atende aos requisitos de documentação de ambiente, dependências e inicialização do projeto.
+
+---
+
+## 📋 Descrição
 
 O **Sistema de Quimioinformática Inteligente** é uma aplicação web desenvolvida para integrar Inteligência Artificial Generativa com bases oficiais de dados químicos, permitindo a pesquisa de moléculas utilizando nomes populares em português.
 
@@ -176,25 +196,7 @@ O banco é criado automaticamente na primeira execução da aplicação.
 git clone https://github.com/Alessandro-011/Quimiochat_IA.git
 ```
 
-Entre na pasta do projeto:
-
-```bash
-cd Quimiochat_IA
-```
-
----
-
-# 🤖 Configurar o Ollama
-
-Instalar o modelo:
-
-```bash
-ollama pull gemma2
-```
-
-Iniciar o servidor:
-
-```bash
+# Iniciar o Ollama (deve ficar rodando em background):
 ollama serve
 ```
 
@@ -287,13 +289,7 @@ Incluindo:
 
 # 🔐 Segurança
 
-O sistema utiliza:
-
-* JWT para autenticação
-* bcrypt para criptografia de senhas
-* SQLAlchemy ORM
-* Validação utilizando Pydantic
-* Controle de acesso às rotas protegidas
+Este projeto foi desenvolvido como TCC de An�lise e Desenvolvimento de Sistemas.
 
 ---
 
