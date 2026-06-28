@@ -7,6 +7,28 @@ TCC — Análise e Desenvolvimento de Sistemas
 import time
 import requests
 import streamlit as st
+import py3Dmol
+from stmol import showmol
+
+@st.cache_data(show_spinner=False)
+def fetch_3d_molblock(smiles: str, api_base_url: str):
+    """Busca o MolBlock 3D na nova rota da API com cache inteligente."""
+    try:
+        res = requests.post(f"{api_base_url}/molecules/3d", json={"smiles": smiles}, timeout=5)
+        if res.status_code == 200:
+            return res.json().get("molblock")
+    except:
+        pass
+    return None
+
+def render_3d_molecule(molblock: str):
+    """Renderiza a malha 3D preservando a paleta Dark do projeto."""
+    view = py3Dmol.view(width=300, height=250)
+    view.addModel(molblock, "sdf")
+    view.setStyle({"stick": {"radius": 0.15}, "sphere": {"scale": 0.25}})
+    view.zoomTo()
+    view.setBackgroundColor('#0e1117') # Match exato com o tema Dark do Streamlit
+    showmol(view, height=250, width=300)
 
 st.set_page_config(
     page_title            = "QuimioChat IA",
@@ -635,12 +657,26 @@ def show_search_result(result: dict):
         if ai_smiles:
             img_url = get_molecule_image_url(ai_smiles)
             if img_url:
-                st.markdown("<div style='margin-top:0.8rem; color:#64748b; font-size:0.78rem;'>ESTRUTURA 2D GERADA</div>",
-                            unsafe_allow_html=True)
-                try:
-                    st.image(img_url, width=240)
-                except Exception:
-                    st.caption("Imagem da estrutura não disponível.")
+                st.markdown("<div style='margin-top:0.8rem; color:#64748b; font-size:0.78rem;'>ESTRUTURA GERADA</div>", unsafe_allow_html=True)
+                
+                # --- INÍCIO INJEÇÃO UI/UX ---
+                viz_mode = st.radio("Modo", ["2D", "3D"], horizontal=True, label_visibility="collapsed")
+                
+                if viz_mode == "2D":
+                    try:
+                        st.image(img_url, width=240)
+                    except Exception:
+                        st.caption("Imagem da estrutura não disponível.")
+                else:
+                    with st.spinner("⏳ Processando matriz 3D..."):
+                        molblock = fetch_3d_molblock(ai_smiles, API_URL)
+                        
+                        if molblock:
+                            render_3d_molecule(molblock)
+                        else:
+                            st.error("Estrutura inviável para 3D em tempo real.")
+                            st.image(img_url, width=240) # Fallback seguro
+                # --- FIM INJEÇÃO UI/UX ---
 
         if not ai_name and not ai_smiles:
             st.info("A IA não retornou dados. Verifique se o Ollama está em execução.")
@@ -700,8 +736,15 @@ def show_history_page():
 
     for i, item in enumerate(history):
         mol_name    = item.get("molecule") or "Molécula desconhecida"
-        search_time = (item.get("search_time") or "")[:16].replace("T", " às ")
-        label       = f"⚗️  {mol_name}   ·   {search_time}"
+        import datetime
+        raw_time = item.get("search_time") or ""
+        try:
+            dt = datetime.datetime.fromisoformat(raw_time.replace("Z", ""))
+            dt_local = dt - datetime.timedelta(hours=3)
+            search_time = dt_local.strftime("%Y-%m-%d às %H:%M")
+        except ValueError:
+            search_time = raw_time[:16].replace("T", " às ")
+        label       = f"⏱️  {mol_name}   •   {search_time}"
 
         with st.expander(label, expanded=(i == 0)):
             c1, c2 = st.columns(2, gap="medium")
@@ -718,9 +761,10 @@ def show_history_page():
             with c2:
                 st.markdown("<span class='qc-badge qc-badge-pc'>🔬 PubChem</span>", unsafe_allow_html=True)
                 st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)
-                _field("Nome Químico", item.get("pubchem_name") or "—")
+                pc_nome = item.get("pubchem_nome_comum") or item.get("pubchem_nome_iupac")
+                _field("Nome Químico", pc_nome or "—")
                 st.markdown("<div style='height:0.3rem'></div>", unsafe_allow_html=True)
-                _field("SMILES",       item.get("pubchem_smiles") or "—", mono=True)
+                _field("SMILES",       item.get("pubchem_smiles_canonico") or "—", mono=True)
                 st.markdown(
                     f"<div style='margin-top:0.4rem;'>{_time_pill(item.get('pubchem_time_ms'))}</div>",
                     unsafe_allow_html=True,

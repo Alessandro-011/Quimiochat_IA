@@ -121,3 +121,36 @@ def route_delete_molecule(
 ):
     """Remove uma molécula pelo ID."""
     return delete_molecule(molecule_id, db)
+
+
+# --- INÍCIO DA INJEÇÃO 3D ---
+from pydantic import BaseModel
+
+class Mol3DRequest(BaseModel):
+    smiles: str
+
+@router.post(
+    "/3d",
+    summary="Gerar MolBlock 3D (RDKit)",
+    description="Recebe um SMILES e devolve as coordenadas 3D otimizadas (MMFF94)."
+)
+def route_generate_3d(request: Mol3DRequest):
+    from rdkit import Chem
+    from rdkit.Chem import AllChem
+    from fastapi import HTTPException
+    
+    try:
+        mol = Chem.MolFromSmiles(request.smiles)
+        if not mol:
+            raise HTTPException(status_code=400, detail="SMILES inválido")
+            
+        mol = Chem.AddHs(mol)
+        res = AllChem.EmbedMolecule(mol, randomSeed=42, enforceChirality=True)
+        if res == -1:
+            raise HTTPException(status_code=400, detail="Falha na estrutura 3D (Embed falhou)")
+            
+        AllChem.MMFFOptimizeMolecule(mol, maxIters=500, nonBondedThresh=100.0)
+        return {"molblock": Chem.MolToMolBlock(mol)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro interno RDKit: {str(e)}")
+# --- FIM DA INJEÇÃO 3D ---
