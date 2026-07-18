@@ -192,13 +192,14 @@ O banco é criado automaticamente na primeira execução da aplicação.
 
 ## 1. Clonar o repositório
 
+
 ```bash
 git clone https://github.com/Alessandro-011/Quimiochat_IA.git
-```
 
 # Iniciar o Ollama (deve ficar rodando em background):
 ollama serve
 ```
+
 
 ---
 
@@ -289,7 +290,8 @@ Incluindo:
 
 # 🔐 Segurança
 
-Este projeto foi desenvolvido como TCC de An�lise e Desenvolvimento de Sistemas.
+Este projeto foi desenvolvido como TCC de Análise e Desenvolvimento de Sistemas.
+
 
 ---
 

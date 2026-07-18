@@ -524,9 +524,9 @@ def show_history_page():
             c1, c2 = st.columns(2, gap="medium")
             with c1:
                 st.markdown("**PubChem**")
-                st.write(f"CID: {h.get('pubchem_cid') or '—'}")
-                st.write(f"Nome: {h.get('pubchem_nome_comum') or h.get('pubchem_nome_iupac') or '—'}")
-                st.write(f"SMILES: `{h.get('pubchem_smiles_canonico') or h.get('pubchem_smiles_isomerico') or '—'}`")
+                st.write(f"CID: {item.get('pubchem_cid') or '—'}")
+                st.write(f"Nome: {item.get('pubchem_nome_comum') or item.get('pubchem_nome_iupac') or '—'}")
+                st.write(f"SMILES: `{item.get('pubchem_smiles_canonico') or item.get('pubchem_smiles_isomerico') or '—'}`")
             with c2:
                 st.markdown("<span class='qc-badge qc-badge-pc'>🔬 PubChem</span>", unsafe_allow_html=True)
                 st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)

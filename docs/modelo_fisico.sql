@@ -1,16 +1,17 @@
 -- ============================================================
--- MODELO FÍSICO — Sistema de Quimioinformática Inteligente
+-- MODELO FISICO - Sistema de Quimioinformatica Inteligente
 -- SGBD: SQLite 3
--- TCC — An�lise e Desenvolvimento de Sistemas
+-- TCC - Analise e Desenvolvimento de Sistemas
+-- Campus Itapecuru Mirim, UEMA
 -- ============================================================
 
 PRAGMA foreign_keys = ON;
-PRAGMA journal_mode = WAL;       -- Write-Ahead Logging para concorrência
-PRAGMA synchronous   = NORMAL;   -- Balanceia performance e segurança
+PRAGMA journal_mode = WAL;       -- Write-Ahead Logging para concorrencia
+PRAGMA synchronous   = NORMAL;   -- Balanceia performance e seguranca
 
 -- ============================================================
 -- TABELA 1: users
--- Armazena usuários cadastrados no sistema
+-- Armazena usuarios cadastrados no sistema
 -- ============================================================
 CREATE TABLE IF NOT EXISTS users (
     id         INTEGER      NOT NULL,
@@ -19,7 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
     senha_hash VARCHAR(255) NOT NULL,
     created_at DATETIME     NOT NULL DEFAULT (datetime('now', 'localtime')),
 
-    CONSTRAINT pk_users        PRIMARY KEY (id   AUTOINCREMENT),
+    CONSTRAINT pk_users        PRIMARY KEY (id AUTOINCREMENT),
     CONSTRAINT uq_users_email  UNIQUE      (email)
 );
 
@@ -27,13 +28,13 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- ============================================================
 -- TABELA 2: molecules
--- Armazena moléculas pesquisadas e seus dados químicos
+-- Armazena moleculas pesquisadas e seus dados quimicos
 -- ============================================================
 CREATE TABLE IF NOT EXISTS molecules (
     id            INTEGER      NOT NULL,
     nome_original VARCHAR(255) NOT NULL,
     nome_quimico  VARCHAR(500)     NULL,
-                 NULL,
+    smiles        TEXT             NULL,
     created_at    DATETIME     NOT NULL DEFAULT (datetime('now', 'localtime')),
 
     CONSTRAINT pk_molecules PRIMARY KEY (id AUTOINCREMENT)
@@ -43,7 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_molecules_nome_original ON molecules(nome_origina
 
 -- ============================================================
 -- TABELA 3: searches
--- Registra cada pesquisa realizada (usuário + molécula)
+-- Registra cada pesquisa realizada (usuario + molecula)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS searches (
     id               INTEGER  NOT NULL,
@@ -52,8 +53,8 @@ CREATE TABLE IF NOT EXISTS searches (
     search_time      DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
     response_time_ms INTEGER      NULL,
 
-    CONSTRAINT pk_searches         PRIMARY KEY (id AUTOINCREMENT),
-    CONSTRAINT fk_searches_user    FOREIGN KEY (user_id)     REFERENCES users(id)     ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT pk_searches          PRIMARY KEY (id AUTOINCREMENT),
+    CONSTRAINT fk_searches_user     FOREIGN KEY (user_id)     REFERENCES users(id)     ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_searches_molecule FOREIGN KEY (molecule_id) REFERENCES molecules(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -81,7 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_results_search_id ON ai_results(search_id);
 
 -- ============================================================
 -- TABELA 5: pubchem_results
--- Resultados retornados pela API pública PubChem
+-- Resultados retornados pela API publica PubChem
 -- ============================================================
 CREATE TABLE IF NOT EXISTS pubchem_results (
     id             INTEGER      NOT NULL,
@@ -100,10 +101,10 @@ CREATE INDEX IF NOT EXISTS idx_pubchem_results_search_id ON pubchem_results(sear
 CREATE INDEX IF NOT EXISTS idx_pubchem_results_cid       ON pubchem_results(cid);
 
 -- ============================================================
--- VIEWS úteis para relatórios acadêmicos
+-- VIEWS para relatorios academicos
 -- ============================================================
 
--- View: Histórico completo de pesquisas com todos os dados
+-- View: Historico completo de pesquisas com todos os dados
 CREATE VIEW IF NOT EXISTS vw_historico_completo AS
 SELECT
     s.id                        AS search_id,
@@ -122,13 +123,13 @@ SELECT
     pc.smiles                   AS pubchem_smiles,
     pc.tempo_resposta           AS tempo_pubchem_ms
 FROM searches s
-JOIN users             u  ON s.user_id     = u.id
-JOIN molecules         m  ON s.molecule_id = m.id
-LEFT JOIN ai_results   ai ON s.id          = ai.search_id
-LEFT JOIN pubchem_results pc ON s.id       = pc.search_id
+JOIN users              u  ON s.user_id     = u.id
+JOIN molecules          m  ON s.molecule_id = m.id
+LEFT JOIN ai_results    ai ON s.id          = ai.search_id
+LEFT JOIN pubchem_results pc ON s.id        = pc.search_id
 ORDER BY s.search_time DESC;
 
--- View: Estatísticas por molécula
+-- View: Estatisticas por molecula
 CREATE VIEW IF NOT EXISTS vw_estatisticas_moleculas AS
 SELECT
     m.nome_original,
@@ -147,19 +148,19 @@ ORDER BY total_pesquisas DESC;
 
 -- ============================================================
 -- DADOS INICIAIS E DE TESTE (RUBRICA)
--- Inserção de dados de validação para popular o banco inicialmente
+-- Insercao de dados de validacao para popular o banco inicialmente
 -- ============================================================
 
--- Inserindo Usuários de Teste (a senha de todos é 'admin123' hasheada)
-INSERT INTO users (nome, email, senha_hash) VALUES 
-('Administrador', 'admin@quimiochat.com', '$2b$12$e/aIqM9sU9H9oP7r7k3VouE8z5V5s5z5s5z5s5z5s5z5s5z5s5z5'),
-('João Pesquisador', 'joao@quimiochat.com', '$2b$12$e/aIqM9sU9H9oP7r7k3VouE8z5V5s5z5s5z5s5z5s5z5s5z5s5z5'),
-('Maria Cientista', 'maria@quimiochat.com', '$2b$12$e/aIqM9sU9H9oP7r7k3VouE8z5V5s5z5s5z5s5z5s5z5s5z5s5z5');
+-- Usuarios de Teste (senha de todos e 'admin123' hasheada com bcrypt)
+INSERT INTO users (nome, email, senha_hash) VALUES
+('Administrador',    'admin@quimiochat.com', '$2b$12$e/aIqM9sU9H9oP7r7k3VouE8z5V5s5z5s5z5s5z5s5z5s5z5s5z5'),
+('Joao Pesquisador', 'joao@quimiochat.com',  '$2b$12$e/aIqM9sU9H9oP7r7k3VouE8z5V5s5z5s5z5s5z5s5z5s5z5s5z5'),
+('Maria Cientista',  'maria@quimiochat.com', '$2b$12$e/aIqM9sU9H9oP7r7k3VouE8z5V5s5z5s5z5s5z5s5z5s5z5s5z5');
 
--- Inserindo Moléculas de Teste
-INSERT INTO molecules (nome_original, nome_quimico, smiles) VALUES 
-('Aspirina', 'Aspirin', 'CC(=O)OC1=CC=CC=C1C(=O)O'),
-('Cafeína', 'Caffeine', 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C'),
-('Glicose', 'D-Glucose', 'C(C1C(C(C(C(O1)O)O)O)O)O'),
-('Dopamina', 'Dopamine', 'C1=CC(=C(C=C1CCN)O)O'),
-('Paracetamol', 'Acetaminophen', 'CC(=O)NC1=CC=C(C=C1)O');
+-- Moleculas de Teste
+INSERT INTO molecules (nome_original, nome_quimico, smiles) VALUES
+('Aspirina',    'Aspirin',        'CC(=O)OC1=CC=CC=C1C(=O)O'),
+('Cafeina',     'Caffeine',       'CN1C=NC2=C1C(=O)N(C(=O)N2C)C'),
+('Glicose',     'D-Glucose',      'C(C1C(C(C(C(O1)O)O)O)O)O'),
+('Dopamina',    'Dopamine',       'C1=CC(=C(C=C1CCN)O)O'),
+('Paracetamol', 'Acetaminophen',  'CC(=O)NC1=CC=C(C=C1)O');
