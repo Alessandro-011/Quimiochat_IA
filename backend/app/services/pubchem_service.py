@@ -44,7 +44,7 @@ async def query_pubchem(molecule_name: str, fallback_name: str = None, fallback_
             if unicodedata.category(c) != "Mn"
         )
         if sem_acento != molecule_name:
-            name_candidates.append(sem_acento)
+            candidates.append(sem_acento)
     except Exception:
         pass
 
