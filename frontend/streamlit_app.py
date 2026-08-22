@@ -37,8 +37,10 @@ st.set_page_config(
     initial_sidebar_state = "expanded",
 )
 
-import os
-API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
+try:
+    API_URL = st.secrets["API_URL"]
+except:
+    API_URL = "http://127.0.0.1:8000"
 
 # ──────────────────────────────────────────────────────────────────
 # DESIGN SYSTEM
