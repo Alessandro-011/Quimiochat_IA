@@ -32,6 +32,24 @@ async def query_pubchem(molecule_name: str, fallback_name: str = None, fallback_
     start_time = time.monotonic()
     cid = None
 
+    # TCC Demo Fallback: Tradução de emergência se a IA local falhar na nuvem
+    if not fallback_name:
+        demo_dict = {
+            "aspirina": "aspirin",
+            "cafeína": "caffeine",
+            "cafeina": "caffeine",
+            "glicose": "glucose",
+            "dopamina": "dopamine",
+            "ibuprofeno": "ibuprofen",
+            "paracetamol": "paracetamol",
+            "etanol": "ethanol",
+            "metanol": "methanol",
+            "acetona": "acetone",
+            "ácido acético": "acetic acid",
+            "acido acetico": "acetic acid"
+        }
+        fallback_name = demo_dict.get(molecule_name.lower())
+
     candidates = [molecule_name]
     if fallback_name and fallback_name.strip() and fallback_name.strip().lower() != molecule_name.lower():
         candidates.append(fallback_name.strip())
