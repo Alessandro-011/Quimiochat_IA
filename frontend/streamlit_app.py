@@ -37,7 +37,8 @@ st.set_page_config(
     initial_sidebar_state = "expanded",
 )
 
-API_URL = "http://127.0.0.1:8000"
+import os
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 
 # ──────────────────────────────────────────────────────────────────
 # DESIGN SYSTEM
@@ -412,11 +413,26 @@ def show_search_result(result: dict):
 
         if pc_cid:
             img_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{pc_cid}/PNG"
-            st.markdown("<div style='margin-top:0.8rem; color:#64748b; font-size:0.78rem;'>ESTRUTURA 2D OFICIAL</div>",
-                        unsafe_allow_html=True)
-            try:
-                st.image(get_molecule_image_url(ai.get("smiles")), width=220)
-            except: pass
+            st.markdown("<div style='margin-top:0.8rem; color:#64748b; font-size:0.78rem;'>ESTRUTURA OFICIAL</div>", unsafe_allow_html=True)
+            
+            # --- INÍCIO INJEÇÃO UI/UX ---
+            viz_mode_pc = st.radio("Modo", ["2D", "3D"], horizontal=True, label_visibility="collapsed", key="viz_pc")
+            
+            if viz_mode_pc == "2D":
+                try:
+                    st.image(img_url, width=240)
+                except Exception:
+                    st.caption("Imagem da estrutura não disponível.")
+            else:
+                with st.spinner("⏳ Processando matriz 3D..."):
+                    molblock_pc = fetch_3d_molblock(pc_smiles, API_URL)
+                    
+                    if molblock_pc:
+                        render_3d_molecule(molblock_pc)
+                    else:
+                        st.error("Estrutura inviável para 3D em tempo real.")
+                        st.image(img_url, width=240) # Fallback seguro
+            # --- FIM INJEÇÃO UI/UX ---
         st.markdown("</div>", unsafe_allow_html=True)
 
         if not pc_cid and not pc_smiles:
